@@ -1,0 +1,42 @@
+# dashboard.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: nginx-basic-auth
+spec:
+  basicAuth:
+    secret: authsecret
+
+---
+# Example:
+#   htpasswd -nb admin WxZ5vPX50CzYv64gA7lI4EPtLwC54g | base64
+#   YWRtaW46JGFwcjEkQ0ROUEZIc1Ekd2UzL25PWTVLWU5lWWppMWlSZ3ViLgoK
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: authsecret
+
+data:
+  users: |
+    YWRtaW46JGFwcjEkQ0ROUEZIc1Ekd2UzL25PWTVLWU5lWWppMWlSZ3ViLgoK
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dashboard
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    #CHANGE ME to MATCH LB
+    - match: Host(`CHANGEME`)
+      kind: Rule
+      middlewares:
+        - name: nginx-basic-auth
+      services:
+        - name: api@internal
+          kind: TraefikService
+  tls:
+    certResolver: pebble

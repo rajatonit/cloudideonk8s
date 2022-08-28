@@ -1,0 +1,14 @@
+{
+  "name": "cloud-ide-spawn-poc",
+  "version": "1.0.0",
+  "description": "POC to spawn ide",
+  "main": "app.js",
+  "scripts": {
+    "test": "NA"
+  },
+  "author": "rajatonit",
+  "license": "ISC",
+  "dependencies": {
+    "kubernetes-client": "^9.0.0"
+  }
+}

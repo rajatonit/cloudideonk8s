@@ -1,0 +1,32 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: traefik-strip-path-prefix
+  namespace: code-server
+spec:
+  stripPrefixRegex:
+    regex:
+      - "/code/user/"
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: code-server
+  namespace: code-server
+spec:
+  entryPoints:
+    - web
+  routes:
+    # - match: Host(`ipHere`)
+    #   kind: Rule
+    #   services:
+    #     - name: code-server-service
+    #       port: 80
+    - match: Host(`ipHere`)
+      kind: Rule
+      middlewares:
+        - name: traefik-strip-path-prefix
+      services:
+        - name: code-server-service
+          port: 80
