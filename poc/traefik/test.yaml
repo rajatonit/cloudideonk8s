@@ -1,0 +1,104 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik-sso
+  labels:
+    app: traefik-sso
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: traefik-sso
+  template:
+    metadata:
+      labels:
+        name: traefik-sso
+        app: traefik-sso
+    spec:
+      containers:
+      - name: traefik-sso
+        image: thomseddon/traefik-forward-auth:2
+        imagePullPolicy: Always
+        env:
+        - name: PROVIDERS_GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: traefik-sso
+              key: clientid
+        - name: PROVIDERS_GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: traefik-sso
+              key: clientsecret
+        - name: SECRET
+          valueFrom:
+            secretKeyRef:
+              name: traefik-sso
+              key: secret
+        - name: COOKIE_DOMAIN
+          value: test.com
+        - name: AUTH_HOST
+          value: test.com
+        - name: INSECURE_COOKIE
+          value: "true"
+        # - name: URL_PATH 
+        #   value: /_oauth
+        # - name: WHITELIST
+        #   value: 
+        - name: LOG_LEVEL
+          value: debug
+        ports:
+        - containerPort: 4181
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: traefik-sso
+spec:
+  selector:
+    app: traefik-sso
+  ports:
+  - protocol: TCP
+    port: 4181
+    targetPort: 4181
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: traefik-sso-headless
+spec:
+  clusterIP: None
+  selector:
+    app: traefik-sso
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 4181
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: traefik-sso
+spec:
+  forwardAuth:
+    address: http://traefik-sso.default.svc.cluster.local:4181
+    authResponseHeaders: 
+        - "X-Forwarded-User"
+    trustForwardHeader: true
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-sso
+spec:
+  entryPoints:
+    - web
+  routes:
+  - match: Host(`test.com`)
+    kind: Rule
+    services:
+    - name: traefik-sso
+      port: 4181
+    middlewares:
+      - name: default-traefik-sso@kubernetescrd
